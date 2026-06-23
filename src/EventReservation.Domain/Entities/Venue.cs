@@ -18,6 +18,8 @@ public class Venue : BaseEntity
 
     public ICollection<Seat> Seats { get; private set; } = new List<Seat>();
 
+    public ICollection<Event> Events { get; private set; } = new List<Event>();
+
     private Venue()
     {
     }

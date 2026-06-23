@@ -29,6 +29,9 @@ public class Reservation : BaseEntity
 
     public ICollection<ReservationSeat> ReservationSeats { get; private set; } = new List<ReservationSeat>();
 
+    public Payment? Payment { get; private set; }
+
+
     private Reservation()
     {
     }

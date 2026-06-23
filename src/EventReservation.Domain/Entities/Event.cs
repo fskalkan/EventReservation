@@ -25,6 +25,8 @@ public class Event : BaseEntity
 
     public ICollection<EventSeat> EventSeats { get; private set; } = new List<EventSeat>();
 
+    public ICollection<Reservation> Reservations { get; private set; } = new List<Reservation>();
+
     private Event()
     {
     }

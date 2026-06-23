@@ -19,6 +19,8 @@ public class EventSeat : BaseEntity
 
     public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
+    public ICollection<ReservationSeat> ReservationSeats { get; private set; } = new List<ReservationSeat>();
+
     private EventSeat()
     {
     }

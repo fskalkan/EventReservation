@@ -16,6 +16,8 @@ public class Seat : BaseEntity
 
     public string Label => $"{Section}-{Row}-{Number}";
 
+    public ICollection<EventSeat> EventSeats { get; private set; } = new List<EventSeat>();
+
     private Seat()
     {
     }
