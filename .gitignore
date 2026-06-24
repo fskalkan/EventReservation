@@ -361,3 +361,13 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local app settings
+src/EventReservation.API/appsettings.Development.json
+src/EventReservation.API/appsettings.Local.json
+
+# Environment variables
+.env
+
+# Docker local overrides
+docker-compose.override.yml
