@@ -15,10 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\EventReservation.Application\EventReservation.Application.csproj" />
     <ProjectReference Include="..\EventReservation.Infrastructure\EventReservation.Infrastructure.csproj" />
   </ItemGroup>

@@ -1,4 +1,8 @@
-﻿using EventReservation.Infrastructure.Persistence;
+﻿using EventReservation.Application.Abstractions.Authentication;
+using EventReservation.Application.Abstractions.Persistence;
+using EventReservation.Infrastructure.Authentication;
+using EventReservation.Infrastructure.Persistence;
+using EventReservation.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +20,15 @@ public static class DependencyInjection
             options.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection"));
         });
+
+        services.Configure<JwtSettings>(
+            configuration.GetSection(JwtSettings.SectionName));
+
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<ITokenService, TokenService>();
 
         return services;
     }
