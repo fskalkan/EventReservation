@@ -4,19 +4,18 @@ using EventReservation.Application.Abstractions.Persistence;
 using EventReservation.Application.Common.Exceptions;
 using EventReservation.Application.Features.Auth.Common;
 using EventReservation.Domain.Entities;
-using EventReservation.Domain.Enums;
 
-namespace EventReservation.Application.Features.Auth.Register;
+namespace EventReservation.Application.Features.Auth.Login;
 
-public sealed class RegisterCommandHandler
-    : ICommandHandler<RegisterCommand, AuthResponse>
+public sealed class LoginCommandHandler
+    : ICommandHandler<LoginCommand, AuthResponse>
 {
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
     private readonly IUnitOfWork _unitOfWork;
 
-    public RegisterCommandHandler(
+    public LoginCommandHandler(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
@@ -29,23 +28,27 @@ public sealed class RegisterCommandHandler
     }
 
     public async Task<AuthResponse> Handle(
-        RegisterCommand command,
+        LoginCommand command,
         CancellationToken cancellationToken)
     {
-        var emailExists = await _userRepository.ExistsByEmailAsync(command.Email, cancellationToken);
+        var user = await _userRepository.GetByEmailAsync(command.Email, cancellationToken);
 
-        if (emailExists)
+        if (user is null)
         {
-            throw new BadRequestException("Email is already in use.");
+            throw new UnauthorizedException("Invalid email or password.");
         }
 
-        var passwordHash = _passwordHasher.Hash(command.Password);
+        if (!user.IsActive)
+        {
+            throw new UnauthorizedException("Invalid email or password.");
+        }
 
-        var user = new User(
-            command.FullName,
-            command.Email,
-            passwordHash,
-            UserRole.Customer);
+        var passwordIsValid = _passwordHasher.Verify(command.Password, user.PasswordHash);
+
+        if (!passwordIsValid)
+        {
+            throw new UnauthorizedException("Invalid email or password.");
+        }
 
         var accessToken = _tokenService.GenerateAccessToken(user);
         var refreshTokenValue = _tokenService.GenerateRefreshToken();
@@ -55,7 +58,6 @@ public sealed class RegisterCommandHandler
             refreshTokenValue,
             _tokenService.GetRefreshTokenExpiration());
 
-        await _userRepository.AddAsync(user, cancellationToken);
         await _userRepository.AddRefreshTokenAsync(refreshToken, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);

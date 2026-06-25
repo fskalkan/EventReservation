@@ -1,4 +1,5 @@
 ﻿using EventReservation.API.Contracts.Auth;
+using EventReservation.Application.Features.Auth.Login;
 using EventReservation.Application.Features.Auth.Register;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -17,12 +18,23 @@ public sealed class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register(
-        RegisterRequest request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
     {
         var command = new RegisterCommand(
             request.FullName,
+            request.Email,
+            request.Password);
+
+        var response = await _sender.Send(command, cancellationToken);
+
+        return Ok(response);
+    }
+
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
+    {
+        var command = new LoginCommand(
             request.Email,
             request.Password);
 
