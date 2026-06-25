@@ -12,17 +12,20 @@ public sealed class RegisterCommandHandler
     : ICommandHandler<RegisterCommand, AuthResponse>
 {
     private readonly IUserRepository _userRepository;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
     private readonly IUnitOfWork _unitOfWork;
 
     public RegisterCommandHandler(
         IUserRepository userRepository,
+        IRefreshTokenRepository refreshTokenRepository,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
         IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
+        _refreshTokenRepository = refreshTokenRepository;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
         _unitOfWork = unitOfWork;
@@ -32,7 +35,9 @@ public sealed class RegisterCommandHandler
         RegisterCommand command,
         CancellationToken cancellationToken)
     {
-        var emailExists = await _userRepository.ExistsByEmailAsync(command.Email, cancellationToken);
+        var emailExists = await _userRepository.ExistsByEmailAsync(
+            command.Email,
+            cancellationToken);
 
         if (emailExists)
         {
@@ -56,7 +61,7 @@ public sealed class RegisterCommandHandler
             _tokenService.GetRefreshTokenExpiration());
 
         await _userRepository.AddAsync(user, cancellationToken);
-        await _userRepository.AddRefreshTokenAsync(refreshToken, cancellationToken);
+        await _refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -11,17 +11,20 @@ public sealed class LoginCommandHandler
     : ICommandHandler<LoginCommand, AuthResponse>
 {
     private readonly IUserRepository _userRepository;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
     private readonly IUnitOfWork _unitOfWork;
 
     public LoginCommandHandler(
         IUserRepository userRepository,
+        IRefreshTokenRepository refreshTokenRepository,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
         IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
+        _refreshTokenRepository = refreshTokenRepository;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
         _unitOfWork = unitOfWork;
@@ -31,7 +34,9 @@ public sealed class LoginCommandHandler
         LoginCommand command,
         CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetByEmailAsync(command.Email, cancellationToken);
+        var user = await _userRepository.GetByEmailAsync(
+            command.Email,
+            cancellationToken);
 
         if (user is null)
         {
@@ -43,7 +48,9 @@ public sealed class LoginCommandHandler
             throw new UnauthorizedException("Invalid email or password.");
         }
 
-        var passwordIsValid = _passwordHasher.Verify(command.Password, user.PasswordHash);
+        var passwordIsValid = _passwordHasher.Verify(
+            command.Password,
+            user.PasswordHash);
 
         if (!passwordIsValid)
         {
@@ -58,7 +65,7 @@ public sealed class LoginCommandHandler
             refreshTokenValue,
             _tokenService.GetRefreshTokenExpiration());
 
-        await _userRepository.AddRefreshTokenAsync(refreshToken, cancellationToken);
+        await _refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

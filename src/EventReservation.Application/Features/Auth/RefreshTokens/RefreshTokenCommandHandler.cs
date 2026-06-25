@@ -3,23 +3,23 @@ using EventReservation.Application.Abstractions.Messaging;
 using EventReservation.Application.Abstractions.Persistence;
 using EventReservation.Application.Common.Exceptions;
 using EventReservation.Application.Features.Auth.Common;
-using DomainRefreshToken = EventReservation.Domain.Entities.RefreshToken;
+using EventReservation.Domain.Entities;
 
 namespace EventReservation.Application.Features.Auth.RefreshTokens;
 
 public sealed class RefreshTokenCommandHandler
     : ICommandHandler<RefreshTokenCommand, AuthResponse>
 {
-    private readonly IUserRepository _userRepository;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly ITokenService _tokenService;
     private readonly IUnitOfWork _unitOfWork;
 
     public RefreshTokenCommandHandler(
-        IUserRepository userRepository,
+        IRefreshTokenRepository refreshTokenRepository,
         ITokenService tokenService,
         IUnitOfWork unitOfWork)
     {
-        _userRepository = userRepository;
+        _refreshTokenRepository = refreshTokenRepository;
         _tokenService = tokenService;
         _unitOfWork = unitOfWork;
     }
@@ -28,19 +28,18 @@ public sealed class RefreshTokenCommandHandler
         RefreshTokenCommand command,
         CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetByRefreshTokenAsync(
+        var existingRefreshToken = await _refreshTokenRepository.GetByTokenAsync(
             command.RefreshToken,
             cancellationToken);
 
-        if (user is null)
+        if (existingRefreshToken is null || !existingRefreshToken.IsActive)
         {
             throw new UnauthorizedException("Invalid refresh token.");
         }
 
-        var existingRefreshToken = user.RefreshTokens
-            .FirstOrDefault(x => x.Token == command.RefreshToken);
+        var user = existingRefreshToken.User;
 
-        if (existingRefreshToken is null || !existingRefreshToken.IsActive)
+        if (!user.IsActive)
         {
             throw new UnauthorizedException("Invalid refresh token.");
         }
@@ -50,12 +49,12 @@ public sealed class RefreshTokenCommandHandler
         var accessToken = _tokenService.GenerateAccessToken(user);
         var newRefreshTokenValue = _tokenService.GenerateRefreshToken();
 
-        var newRefreshToken = new DomainRefreshToken(
+        var newRefreshToken = new RefreshToken(
             user.Id,
             newRefreshTokenValue,
             _tokenService.GetRefreshTokenExpiration());
 
-        await _userRepository.AddRefreshTokenAsync(
+        await _refreshTokenRepository.AddAsync(
             newRefreshToken,
             cancellationToken);
 

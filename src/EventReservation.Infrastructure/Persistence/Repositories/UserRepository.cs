@@ -25,15 +25,6 @@ public sealed class UserRepository : IUserRepository
             .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
     }
 
-    public async Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
-    {
-        return await _context.Users
-            .Include(x => x.RefreshTokens)
-            .FirstOrDefaultAsync(
-                x => x.RefreshTokens.Any(rt => rt.Token == refreshToken),
-                cancellationToken);
-    }
-
     public async Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         return await _context.Users
@@ -43,10 +34,5 @@ public sealed class UserRepository : IUserRepository
     public async Task AddAsync(User user, CancellationToken cancellationToken = default)
     {
         await _context.Users.AddAsync(user, cancellationToken);
-    }
-
-    public async Task AddRefreshTokenAsync(RefreshToken refreshToken, CancellationToken cancellationToken = default)
-    {
-        await _context.RefreshTokens.AddAsync(refreshToken, cancellationToken);
     }
 }
