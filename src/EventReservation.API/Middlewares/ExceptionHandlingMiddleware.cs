@@ -25,22 +25,30 @@ public sealed class ExceptionHandlingMiddleware
     }
 
     private static async Task HandleExceptionAsync(
-        HttpContext context,
-        Exception exception)
+    HttpContext context,
+    Exception exception)
     {
         var statusCode = exception switch
         {
+            AppValidationException => HttpStatusCode.BadRequest,
             BadRequestException => HttpStatusCode.BadRequest,
             NotFoundException => HttpStatusCode.NotFound,
             UnauthorizedException => HttpStatusCode.Unauthorized,
             _ => HttpStatusCode.InternalServerError
         };
 
-        var response = new
-        {
-            statusCode = (int)statusCode,
-            message = exception.Message
-        };
+        object response = exception is AppValidationException validationException
+            ? new
+            {
+                statusCode = (int)statusCode,
+                message = validationException.Message,
+                errors = validationException.Errors
+            }
+            : new
+            {
+                statusCode = (int)statusCode,
+                message = exception.Message
+            };
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;

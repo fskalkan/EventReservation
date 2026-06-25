@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using EventReservation.Application.Common.Behaviors;
+using FluentValidation;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EventReservation.Application;
 
@@ -9,7 +11,11 @@ public static class DependencyInjection
         services.AddMediatR(configuration =>
         {
             configuration.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
+
+            configuration.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
+
+        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
         return services;
     }
