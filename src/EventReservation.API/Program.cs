@@ -1,3 +1,4 @@
+using EventReservation.API.Middlewares;
 using EventReservation.Application;
 using EventReservation.Infrastructure;
 
@@ -19,6 +20,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
