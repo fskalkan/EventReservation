@@ -1,5 +1,6 @@
 ﻿using EventReservation.API.Contracts.Auth;
 using EventReservation.Application.Features.Auth.Login;
+using EventReservation.Application.Features.Auth.Logout;
 using EventReservation.Application.Features.Auth.RefreshTokens;
 using EventReservation.Application.Features.Auth.Register;
 using MediatR;
@@ -49,6 +50,18 @@ public sealed class AuthController : ControllerBase
     public async Task<IActionResult> RefreshToken(RefreshTokenRequest request, CancellationToken cancellationToken)
     {
         var command = new RefreshTokenCommand(
+            request.RefreshToken);
+
+        var response = await _sender.Send(command, cancellationToken);
+
+        return Ok(response);
+    }
+
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(LogoutRequest request, CancellationToken cancellationToken)
+    {
+        var command = new LogoutCommand(
             request.RefreshToken);
 
         var response = await _sender.Send(command, cancellationToken);
