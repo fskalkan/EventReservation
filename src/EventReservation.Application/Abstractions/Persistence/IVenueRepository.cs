@@ -14,4 +14,6 @@ public interface IVenueRepository
     Task<VenueResponse?> GetResponseByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<VenueResponse>> GetAllAsync(CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsByNameAndCityExceptIdAsync(string name, string city, Guid excludedVenueId, CancellationToken cancellationToken = default);
 }

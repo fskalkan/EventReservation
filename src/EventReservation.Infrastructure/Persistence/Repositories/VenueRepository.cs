@@ -64,4 +64,15 @@ public sealed class VenueRepository : IVenueRepository
                 x.CreatedAt))
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+
+    public async Task<bool> ExistsByNameAndCityExceptIdAsync(string name, string city, Guid excludedVenueId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Venues
+            .AnyAsync(
+                x => x.Name == name &&
+                     x.City == city &&
+                     x.Id != excludedVenueId,
+                cancellationToken);
+    }
 }
