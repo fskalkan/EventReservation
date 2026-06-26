@@ -1,5 +1,7 @@
 ﻿using EventReservation.API.Contracts.Venues;
 using EventReservation.Application.Features.Venues.CreateVenue;
+using EventReservation.Application.Features.Venues.GetVenueById;
+using EventReservation.Application.Features.Venues.GetVenues;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,6 +33,22 @@ public sealed class VenuesController : ControllerBase
 
         var response = await _sender.Send(command, cancellationToken);
 
+        return Ok(response);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    {
+        var query = new GetVenuesQuery();
+        var response = await _sender.Send(query, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var query = new GetVenueByIdQuery(id);
+        var response = await _sender.Send(query, cancellationToken);
         return Ok(response);
     }
 }
