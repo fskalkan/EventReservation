@@ -1,0 +1,35 @@
+﻿using EventReservation.API.Contracts.Events;
+using EventReservation.Application.Features.Events.CreateEvent;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace EventReservation.API.Controllers;
+
+[ApiController]
+[Route("api/events")]
+public sealed class EventsController : ControllerBase
+{
+    private readonly ISender _sender;
+
+    public EventsController(ISender sender)
+    {
+        _sender = sender;
+    }
+
+    [Authorize(Roles = "Organizer,Admin")]
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateEventRequest request, CancellationToken cancellationToken)
+    {
+        var command = new CreateEventCommand(
+            request.VenueId,
+            request.Title,
+            request.Description,
+            request.StartDate,
+            request.EndDate);
+
+        var response = await _sender.Send(command, cancellationToken);
+
+        return Ok(response);
+    }
+}
