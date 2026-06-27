@@ -1,5 +1,7 @@
 ﻿using EventReservation.API.Contracts.Events;
 using EventReservation.Application.Features.Events.CreateEvent;
+using EventReservation.Application.Features.Events.GetEventById;
+using EventReservation.Application.Features.Events.GetEvents;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,6 +32,22 @@ public sealed class EventsController : ControllerBase
 
         var response = await _sender.Send(command, cancellationToken);
 
+        return Ok(response);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    {
+        var query = new GetEventsQuery();
+        var response = await _sender.Send(query, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var query = new GetEventByIdQuery(id);
+        var response = await _sender.Send(query, cancellationToken);
         return Ok(response);
     }
 }

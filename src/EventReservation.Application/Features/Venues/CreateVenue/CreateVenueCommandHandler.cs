@@ -24,9 +24,7 @@ public sealed class CreateVenueCommandHandler
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<VenueResponse> Handle(
-        CreateVenueCommand command,
-        CancellationToken cancellationToken)
+    public async Task<VenueResponse> Handle(CreateVenueCommand command, CancellationToken cancellationToken)
     {
         if (!_currentUserService.IsAuthenticated || _currentUserService.UserId is null)
         {
