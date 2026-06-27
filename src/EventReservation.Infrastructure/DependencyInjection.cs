@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IVenueRepository, VenueRepository>();
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<ISeatRepository, SeatRepository>();
+        services.AddScoped<IEventSeatRepository, EventSeatRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddScoped<IPasswordHasher, PasswordHasher>();

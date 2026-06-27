@@ -77,4 +77,18 @@ public sealed class SeatRepository : ISeatRepository
     {
         await _context.Seats.AddRangeAsync(seats, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<SeatForEventSeatGenerationDto>> GetForEventSeatGenerationByVenueIdAsync(Guid venueId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Seats
+            .AsNoTracking()
+            .Where(x => x.VenueId == venueId)
+            .OrderBy(x => x.Section)
+            .ThenBy(x => x.Row)
+            .ThenBy(x => x.Number)
+            .Select(x => new SeatForEventSeatGenerationDto(
+                x.Id,
+                x.Section))
+            .ToListAsync(cancellationToken);
+    }
 }

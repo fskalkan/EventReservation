@@ -16,4 +16,6 @@ public interface ISeatRepository
     Task<bool> ExistsInRangeAsync(Guid venueId, string section, string row, int startNumber, int endNumber, CancellationToken cancellationToken = default);
 
     Task AddRangeAsync(IEnumerable<Seat> seats, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SeatForEventSeatGenerationDto>> GetForEventSeatGenerationByVenueIdAsync(Guid venueId, CancellationToken cancellationToken = default);
 }
