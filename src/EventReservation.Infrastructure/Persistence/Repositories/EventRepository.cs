@@ -72,4 +72,15 @@ public sealed class EventRepository : IEventRepository
     {
         await _context.Events.AddAsync(eventEntity, cancellationToken);
     }
+
+    public async Task<bool> ExistsByTitleVenueAndStartDateExceptIdAsync(string title, Guid venueId, DateTime startDate, Guid excludedEventId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Events
+            .AnyAsync(
+                x => x.Title == title &&
+                     x.VenueId == venueId &&
+                     x.StartDate == startDate &&
+                     x.Id != excludedEventId,
+                cancellationToken);
+    }
 }

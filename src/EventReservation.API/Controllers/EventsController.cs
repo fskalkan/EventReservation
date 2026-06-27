@@ -1,7 +1,9 @@
 ﻿using EventReservation.API.Contracts.Events;
 using EventReservation.Application.Features.Events.CreateEvent;
+using EventReservation.Application.Features.Events.DeleteEvent;
 using EventReservation.Application.Features.Events.GetEventById;
 using EventReservation.Application.Features.Events.GetEvents;
+using EventReservation.Application.Features.Events.UpdateEvent;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,7 +33,6 @@ public sealed class EventsController : ControllerBase
             request.EndDate);
 
         var response = await _sender.Send(command, cancellationToken);
-
         return Ok(response);
     }
 
@@ -48,6 +49,30 @@ public sealed class EventsController : ControllerBase
     {
         var query = new GetEventByIdQuery(id);
         var response = await _sender.Send(query, cancellationToken);
+        return Ok(response);
+    }
+
+    [Authorize(Roles = "Organizer,Admin")]
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, UpdateEventRequest request, CancellationToken cancellationToken)
+    {
+        var command = new UpdateEventCommand(
+            id,
+            request.Title,
+            request.Description,
+            request.StartDate,
+            request.EndDate);
+
+        var response = await _sender.Send(command, cancellationToken);
+        return Ok(response);
+    }
+
+    [Authorize(Roles = "Organizer,Admin")]
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new DeleteEventCommand(id);
+        var response = await _sender.Send(command, cancellationToken);
         return Ok(response);
     }
 }

@@ -14,4 +14,6 @@ public interface IEventRepository
     Task<bool> ExistsByTitleVenueAndStartDateAsync(string title, Guid venueId, DateTime startDate, CancellationToken cancellationToken = default);
 
     Task AddAsync(Event eventEntity, CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsByTitleVenueAndStartDateExceptIdAsync(string title, Guid venueId, DateTime startDate, Guid excludedEventId, CancellationToken cancellationToken = default);
 }
