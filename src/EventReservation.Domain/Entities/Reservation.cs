@@ -40,15 +40,26 @@ public class Reservation : BaseEntity
         string reservationCode,
         Guid customerId,
         Guid eventId,
-        decimal totalAmount,
         DateTime expiresAt)
     {
         ReservationCode = reservationCode;
         CustomerId = customerId;
         EventId = eventId;
-        TotalAmount = totalAmount;
         ExpiresAt = expiresAt;
         Status = ReservationStatus.PendingPayment;
+        TotalAmount = 0;
+    }
+
+    public void AddSeat(Guid eventSeatId, decimal price)
+    {
+        ReservationSeats.Add(new ReservationSeat(
+            Id,
+            eventSeatId,
+            price));
+
+        TotalAmount += price;
+
+        MarkAsUpdated();
     }
 
     public void Confirm()

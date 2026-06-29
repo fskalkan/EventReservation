@@ -10,4 +10,6 @@ public interface IEventSeatRepository
     Task<bool> ExistsByEventIdAsync(Guid eventId, CancellationToken cancellationToken = default);
 
     Task AddRangeAsync(IEnumerable<EventSeat> eventSeats, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<EventSeat>> GetByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken = default);
 }

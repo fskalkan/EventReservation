@@ -46,4 +46,12 @@ public sealed class EventSeatRepository : IEventSeatRepository
     {
         await _context.EventSeats.AddRangeAsync(eventSeats, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<EventSeat>> GetByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        return await _context.EventSeats
+            .Include(x => x.Seat)
+            .Where(x => ids.Contains(x.Id))
+            .ToListAsync(cancellationToken);
+    }
 }
