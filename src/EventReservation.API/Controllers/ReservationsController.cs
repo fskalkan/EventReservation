@@ -1,5 +1,6 @@
 ﻿using EventReservation.API.Contracts.Reservations;
 using EventReservation.Application.Features.Reservations.CreateReservation;
+using EventReservation.Application.Features.Reservations.PayReservation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,6 +27,20 @@ public sealed class ReservationsController : ControllerBase
             request.EventSeatIds);
 
         var response = await _sender.Send(command, cancellationToken);
+        return Ok(response);
+    }
+
+    [Authorize(Roles = "Customer")]
+    [HttpPost("{reservationId:guid}/pay")]
+    public async Task<IActionResult> Pay(Guid reservationId, PayReservationRequest request, CancellationToken cancellationToken)
+    {
+        var command = new PayReservationCommand(
+            reservationId,
+            request.Amount,
+            request.Method);
+
+        var response = await _sender.Send(command, cancellationToken);
+
         return Ok(response);
     }
 }

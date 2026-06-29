@@ -25,8 +25,8 @@ public sealed class ExceptionHandlingMiddleware
     }
 
     private static async Task HandleExceptionAsync(
-    HttpContext context,
-    Exception exception)
+        HttpContext context,
+        Exception exception)
     {
         var statusCode = exception switch
         {
@@ -34,6 +34,7 @@ public sealed class ExceptionHandlingMiddleware
             BadRequestException => HttpStatusCode.BadRequest,
             NotFoundException => HttpStatusCode.NotFound,
             UnauthorizedException => HttpStatusCode.Unauthorized,
+            ForbiddenAccessException => HttpStatusCode.Forbidden,
             _ => HttpStatusCode.InternalServerError
         };
 
