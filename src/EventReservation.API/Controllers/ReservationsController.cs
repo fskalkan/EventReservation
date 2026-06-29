@@ -1,6 +1,8 @@
 ﻿using EventReservation.API.Contracts.Reservations;
 using EventReservation.Application.Features.Reservations.CancelReservation;
 using EventReservation.Application.Features.Reservations.CreateReservation;
+using EventReservation.Application.Features.Reservations.GetMyReservations;
+using EventReservation.Application.Features.Reservations.GetReservationById;
 using EventReservation.Application.Features.Reservations.PayReservation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -51,6 +53,24 @@ public sealed class ReservationsController : ControllerBase
     {
         var command = new CancelReservationCommand(reservationId);
         var response = await _sender.Send(command, cancellationToken);
+        return Ok(response);
+    }
+
+    [Authorize(Roles = "Customer")]
+    [HttpGet("my")]
+    public async Task<IActionResult> GetMyReservations(CancellationToken cancellationToken)
+    {
+        var query = new GetMyReservationsQuery();
+        var response = await _sender.Send(query, cancellationToken);
+        return Ok(response);
+    }
+
+    [Authorize(Roles = "Customer")]
+    [HttpGet("{reservationId:guid}")]
+    public async Task<IActionResult> GetById(Guid reservationId, CancellationToken cancellationToken)
+    {
+        var query = new GetReservationByIdQuery(reservationId);
+        var response = await _sender.Send(query, cancellationToken);
         return Ok(response);
     }
 }
