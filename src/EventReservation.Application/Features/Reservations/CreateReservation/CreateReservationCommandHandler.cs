@@ -1,4 +1,5 @@
 ﻿using EventReservation.Application.Abstractions.Authentication;
+using EventReservation.Application.Abstractions.BackgroundJobs;
 using EventReservation.Application.Abstractions.Messaging;
 using EventReservation.Application.Abstractions.Persistence;
 using EventReservation.Application.Common.Exceptions;
@@ -16,19 +17,22 @@ public sealed class CreateReservationCommandHandler
     private readonly IEventSeatRepository _eventSeatRepository;
     private readonly IReservationRepository _reservationRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IReservationExpirationScheduler _reservationExpirationScheduler;
 
     public CreateReservationCommandHandler(
         ICurrentUserService currentUserService,
         IEventRepository eventRepository,
         IEventSeatRepository eventSeatRepository,
         IReservationRepository reservationRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IReservationExpirationScheduler reservationExpirationScheduler)
     {
         _currentUserService = currentUserService;
         _eventRepository = eventRepository;
         _eventSeatRepository = eventSeatRepository;
         _reservationRepository = reservationRepository;
         _unitOfWork = unitOfWork;
+        _reservationExpirationScheduler = reservationExpirationScheduler;
     }
 
     public async Task<ReservationResponse> Handle(CreateReservationCommand command, CancellationToken cancellationToken)
@@ -93,6 +97,8 @@ public sealed class CreateReservationCommandHandler
         await _reservationRepository.AddAsync(reservation, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        _reservationExpirationScheduler.ScheduleExpiration(reservation.Id, reservation.ExpiresAt);
 
         var seats = eventSeats
             .Select(x => new ReservationSeatResponse(

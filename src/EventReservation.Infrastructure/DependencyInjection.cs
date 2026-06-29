@@ -1,8 +1,11 @@
 ﻿using EventReservation.Application.Abstractions.Authentication;
+using EventReservation.Application.Abstractions.BackgroundJobs;
 using EventReservation.Application.Abstractions.Persistence;
 using EventReservation.Infrastructure.Authentication;
+using EventReservation.Infrastructure.BackgroundJobs;
 using EventReservation.Infrastructure.Persistence;
 using EventReservation.Infrastructure.Persistence.Repositories;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +24,12 @@ public static class DependencyInjection
                 configuration.GetConnectionString("DefaultConnection"));
         });
 
+        services.AddHangfire(hangfireConfiguration =>
+        {
+            hangfireConfiguration.UseSqlServerStorage(
+                configuration.GetConnectionString("DefaultConnection"));
+        });
+
         services.Configure<JwtSettings>(
             configuration.GetSection(JwtSettings.SectionName));
 
@@ -32,7 +41,11 @@ public static class DependencyInjection
         services.AddScoped<IEventSeatRepository, EventSeatRepository>();
         services.AddScoped<IReservationRepository, ReservationRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
+
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        services.AddScoped<IReservationExpirationJob, ReservationExpirationJob>();
+        services.AddScoped<IReservationExpirationScheduler, HangfireReservationExpirationScheduler>();
 
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();

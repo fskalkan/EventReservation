@@ -5,6 +5,7 @@ using EventReservation.Application;
 using EventReservation.Application.Abstractions.Authentication;
 using EventReservation.Infrastructure;
 using EventReservation.Infrastructure.Authentication;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -15,6 +16,8 @@ builder.Services.AddControllers();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddHangfireServer();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -86,6 +89,8 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    app.UseHangfireDashboard("/hangfire");
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
