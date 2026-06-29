@@ -1,4 +1,5 @@
 ﻿using EventReservation.API.Contracts.Reservations;
+using EventReservation.Application.Features.Reservations.CancelReservation;
 using EventReservation.Application.Features.Reservations.CreateReservation;
 using EventReservation.Application.Features.Reservations.PayReservation;
 using MediatR;
@@ -41,6 +42,15 @@ public sealed class ReservationsController : ControllerBase
 
         var response = await _sender.Send(command, cancellationToken);
 
+        return Ok(response);
+    }
+
+    [Authorize(Roles = "Customer")]
+    [HttpPost("{reservationId:guid}/cancel")]
+    public async Task<IActionResult> Cancel(Guid reservationId, CancellationToken cancellationToken)
+    {
+        var command = new CancelReservationCommand(reservationId);
+        var response = await _sender.Send(command, cancellationToken);
         return Ok(response);
     }
 }
