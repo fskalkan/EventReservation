@@ -1,5 +1,6 @@
 ﻿using EventReservation.API.Contracts.EventSeats;
 using EventReservation.Application.Features.EventSeats.GenerateEventSeats;
+using EventReservation.Application.Features.EventSeats.GetEventSeats;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,6 +28,14 @@ public sealed class EventSeatsController : ControllerBase
             request.SectionPrices);
 
         var response = await _sender.Send(command, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetByEventId(Guid eventId, CancellationToken cancellationToken)
+    {
+        var query = new GetEventSeatsQuery(eventId);
+        var response = await _sender.Send(query, cancellationToken);
         return Ok(response);
     }
 }
