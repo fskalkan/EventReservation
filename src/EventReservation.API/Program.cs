@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using EventReservation.API.Middlewares;
 using EventReservation.API.Services;
 using EventReservation.Application;
@@ -54,6 +56,41 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            statusCode = StatusCodes.Status429TooManyRequests,
+            message = "Too many requests. Please try again later."
+        }, cancellationToken);
+    };
+
+    options.AddPolicy("api", httpContext =>
+    {
+        var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var partitionKey = userId
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "anonymous";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+    });
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -97,10 +134,15 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+
 app.UseAuthentication();
+
+app.UseRateLimiter();
 
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers()
+    .RequireRateLimiting("api");
 
 app.Run();
