@@ -146,3 +146,5 @@ app.MapControllers()
     .RequireRateLimiting("api");
 
 app.Run();
+
+public partial class Program;
