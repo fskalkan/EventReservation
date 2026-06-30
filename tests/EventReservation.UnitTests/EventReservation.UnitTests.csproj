@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\EventReservation.Domain\EventReservation.Domain.csproj" />
     <ProjectReference Include="..\..\src\EventReservation.Application\EventReservation.Application.csproj" />
+    <ProjectReference Include="..\..\src\EventReservation.Infrastructure\EventReservation.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
