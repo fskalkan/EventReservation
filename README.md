@@ -2,6 +2,8 @@
 
 EventReservation, etkinlik ve koltuk rezervasyon senaryosu üzerine geliştirilmiş kapsamlı bir ASP.NET Core Web API projesidir.
 
+Projede mekan, koltuk, etkinlik, rezervasyon ve ödeme süreçleri uçtan uca ele alınmıştır. Kullanıcılar etkinlikler için koltuk seçebilir, rezervasyon oluşturabilir, ödeme yapabilir veya rezervasyonlarını iptal edebilir. Süresi dolan rezervasyonlar Hangfire background job ile otomatik olarak expire edilir ve koltuk durumları SignalR ile gerçek zamanlı olarak bildirilebilir.
+
 ---
 
 ## Özellikler
