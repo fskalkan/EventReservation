@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using EventReservation.Application.Abstractions.Authentication;
 using EventReservation.Application.Abstractions.Persistence;
+using EventReservation.Application.Abstractions.Realtime;
 using EventReservation.Application.Common.Exceptions;
 using EventReservation.Application.Features.Reservations.PayReservation;
 using EventReservation.Domain.Entities;
@@ -16,6 +17,7 @@ public sealed class PayReservationCommandHandlerTests
     private readonly Mock<IReservationRepository> _reservationRepositoryMock = new();
     private readonly Mock<IPaymentRepository> _paymentRepositoryMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
+    private readonly Mock<IRealtimeNotifier> _realtimeNotifierMock = new();
 
     [Fact]
     public async Task Handle_ShouldConfirmReservation_CreateSuccessfulPayment_AndReserveSeats_WhenRequestIsValid()
@@ -96,6 +98,15 @@ public sealed class PayReservationCommandHandlerTests
 
         _unitOfWorkMock.Verify(
             x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _realtimeNotifierMock.Verify(
+            x => x.NotifyEventSeatsChangedAsync(
+                reservation.EventId,
+                It.Is<IReadOnlyList<EventSeatStatusChangedMessage>>(seats =>
+                    seats.Count == 2 &&
+                    seats.All(seat => seat.Status == EventSeatStatus.Reserved)),
+                It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -349,6 +360,15 @@ public sealed class PayReservationCommandHandlerTests
         _unitOfWorkMock.Verify(
             x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once);
+
+        _realtimeNotifierMock.Verify(
+            x => x.NotifyEventSeatsChangedAsync(
+                reservation.EventId,
+                It.Is<IReadOnlyList<EventSeatStatusChangedMessage>>(seats =>
+                    seats.Count == 2 &&
+                    seats.All(seat => seat.Status == EventSeatStatus.Available)),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -404,7 +424,8 @@ public sealed class PayReservationCommandHandlerTests
             _currentUserServiceMock.Object,
             _reservationRepositoryMock.Object,
             _paymentRepositoryMock.Object,
-            _unitOfWorkMock.Object);
+            _unitOfWorkMock.Object,
+            _realtimeNotifierMock.Object);
     }
 
     private static Reservation CreatePendingReservationWithSeats(

@@ -1,10 +1,12 @@
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
+using EventReservation.API.Hubs;
 using EventReservation.API.Middlewares;
 using EventReservation.API.Services;
 using EventReservation.Application;
 using EventReservation.Application.Abstractions.Authentication;
+using EventReservation.Application.Abstractions.Realtime;
 using EventReservation.Infrastructure;
 using EventReservation.Infrastructure.Authentication;
 using Hangfire;
@@ -23,6 +25,9 @@ builder.Services.AddHangfireServer();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IRealtimeNotifier, SignalRRealtimeNotifier>();
 
 var jwtSettings = builder.Configuration
     .GetSection(JwtSettings.SectionName)
@@ -144,6 +149,8 @@ app.UseAuthorization();
 
 app.MapControllers()
     .RequireRateLimiting("api");
+
+app.MapHub<EventSeatsHub>("/hubs/event-seats");
 
 app.Run();
 

@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using EventReservation.Application.Abstractions.Persistence;
+using EventReservation.Application.Abstractions.Realtime;
 using EventReservation.Domain.Entities;
 using EventReservation.Domain.Enums;
 using EventReservation.Infrastructure.BackgroundJobs;
@@ -12,6 +13,7 @@ public sealed class ReservationExpirationJobTests
 {
     private readonly Mock<IReservationRepository> _reservationRepositoryMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
+    private readonly Mock<IRealtimeNotifier> _realtimeNotifierMock = new();
 
     [Fact]
     public async Task ExpireAsync_ShouldExpireReservation_ReleaseSeats_AndSaveChanges_WhenReservationIsPendingPaymentAndExpired()
@@ -45,6 +47,15 @@ public sealed class ReservationExpirationJobTests
 
         _unitOfWorkMock.Verify(
             x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _realtimeNotifierMock.Verify(
+            x => x.NotifyEventSeatsChangedAsync(
+                reservation.EventId,
+                It.Is<IReadOnlyList<EventSeatStatusChangedMessage>>(seats =>
+                    seats.Count == 2 &&
+                    seats.All(seat => seat.Status == EventSeatStatus.Available)),
+                It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -133,22 +144,29 @@ public sealed class ReservationExpirationJobTests
     {
         return new ReservationExpirationJob(
             _reservationRepositoryMock.Object,
-            _unitOfWorkMock.Object);
+            _unitOfWorkMock.Object,
+            _realtimeNotifierMock.Object);
     }
 
     private static Reservation CreatePendingReservationWithLockedSeats(DateTime expiresAt)
     {
+        var eventId = Guid.NewGuid();
+
         var reservation = new Reservation(
             "RSV-TEST",
             Guid.NewGuid(),
-            Guid.NewGuid(),
+            eventId,
             expiresAt);
 
         var firstEventSeat = CreateLockedEventSeat(
-            price: 1000m);
+            eventId,
+            price: 1000m,
+            number: 1);
 
         var secondEventSeat = CreateLockedEventSeat(
-            price: 750m);
+            eventId,
+            price: 750m,
+            number: 2);
 
         reservation.AddSeat(firstEventSeat.Id, firstEventSeat.Price);
         reservation.AddSeat(secondEventSeat.Id, secondEventSeat.Price);
@@ -168,16 +186,16 @@ public sealed class ReservationExpirationJobTests
         return reservation;
     }
 
-    private static EventSeat CreateLockedEventSeat(decimal price)
+    private static EventSeat CreateLockedEventSeat(Guid eventId, decimal price, int number)
     {
         var seat = new Seat(
             Guid.NewGuid(),
             "A",
             "1",
-            1);
+            number);
 
         var eventSeat = new EventSeat(
-            Guid.NewGuid(),
+            eventId,
             seat.Id,
             price);
 

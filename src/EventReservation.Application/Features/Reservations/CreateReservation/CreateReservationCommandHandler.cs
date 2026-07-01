@@ -2,6 +2,7 @@
 using EventReservation.Application.Abstractions.BackgroundJobs;
 using EventReservation.Application.Abstractions.Messaging;
 using EventReservation.Application.Abstractions.Persistence;
+using EventReservation.Application.Abstractions.Realtime;
 using EventReservation.Application.Common.Exceptions;
 using EventReservation.Application.Features.Reservations.Common;
 using EventReservation.Domain.Entities;
@@ -18,6 +19,7 @@ public sealed class CreateReservationCommandHandler
     private readonly IReservationRepository _reservationRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IReservationExpirationScheduler _reservationExpirationScheduler;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
     public CreateReservationCommandHandler(
         ICurrentUserService currentUserService,
@@ -25,7 +27,8 @@ public sealed class CreateReservationCommandHandler
         IEventSeatRepository eventSeatRepository,
         IReservationRepository reservationRepository,
         IUnitOfWork unitOfWork,
-        IReservationExpirationScheduler reservationExpirationScheduler)
+        IReservationExpirationScheduler reservationExpirationScheduler,
+        IRealtimeNotifier realtimeNotifier)
     {
         _currentUserService = currentUserService;
         _eventRepository = eventRepository;
@@ -33,6 +36,7 @@ public sealed class CreateReservationCommandHandler
         _reservationRepository = reservationRepository;
         _unitOfWork = unitOfWork;
         _reservationExpirationScheduler = reservationExpirationScheduler;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     public async Task<ReservationResponse> Handle(CreateReservationCommand command, CancellationToken cancellationToken)
@@ -99,6 +103,19 @@ public sealed class CreateReservationCommandHandler
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _reservationExpirationScheduler.ScheduleExpiration(reservation.Id, reservation.ExpiresAt);
+
+        await _realtimeNotifier.NotifyEventSeatsChangedAsync(
+            eventEntity.Id,
+            eventSeats
+                .Select(eventSeat => new EventSeatStatusChangedMessage(
+                    eventSeat.EventId,
+                    eventSeat.Id,
+                    eventSeat.SeatId,
+                    eventSeat.Seat.Label,
+                    eventSeat.Price,
+                    eventSeat.Status))
+                .ToList(),
+            cancellationToken);
 
         var seats = eventSeats
             .Select(x => new ReservationSeatResponse(

@@ -2,6 +2,7 @@
 using EventReservation.Application.Abstractions.Authentication;
 using EventReservation.Application.Abstractions.BackgroundJobs;
 using EventReservation.Application.Abstractions.Persistence;
+using EventReservation.Application.Abstractions.Realtime;
 using EventReservation.Application.Common.Exceptions;
 using EventReservation.Application.Features.Reservations.CreateReservation;
 using EventReservation.Domain.Entities;
@@ -19,6 +20,7 @@ public sealed class CreateReservationCommandHandlerTests
     private readonly Mock<IReservationRepository> _reservationRepositoryMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     private readonly Mock<IReservationExpirationScheduler> _reservationExpirationSchedulerMock = new();
+    private readonly Mock<IRealtimeNotifier> _realtimeNotifierMock = new();
 
     [Fact]
     public async Task Handle_ShouldThrowBadRequestException_WhenSelectedSeatIsNotAvailable()
@@ -323,6 +325,15 @@ public sealed class CreateReservationCommandHandlerTests
                 capturedReservation.Id,
                 capturedReservation.ExpiresAt),
             Times.Once);
+
+        _realtimeNotifierMock.Verify(
+            x => x.NotifyEventSeatsChangedAsync(
+                eventEntity.Id,
+                It.Is<IReadOnlyList<EventSeatStatusChangedMessage>>(seats =>
+                    seats.Count == 2 &&
+                    seats.All(seat => seat.Status == EventSeatStatus.Locked)),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     private CreateReservationCommandHandler CreateHandler()
@@ -333,7 +344,8 @@ public sealed class CreateReservationCommandHandlerTests
             _eventSeatRepositoryMock.Object,
             _reservationRepositoryMock.Object,
             _unitOfWorkMock.Object,
-            _reservationExpirationSchedulerMock.Object);
+            _reservationExpirationSchedulerMock.Object,
+            _realtimeNotifierMock.Object);
     }
 
     private static EventSeat CreateEventSeatWithSeat(

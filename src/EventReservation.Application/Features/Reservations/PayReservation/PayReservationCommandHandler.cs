@@ -1,6 +1,7 @@
 ﻿using EventReservation.Application.Abstractions.Authentication;
 using EventReservation.Application.Abstractions.Messaging;
 using EventReservation.Application.Abstractions.Persistence;
+using EventReservation.Application.Abstractions.Realtime;
 using EventReservation.Application.Common.Exceptions;
 using EventReservation.Domain.Entities;
 using EventReservation.Domain.Enums;
@@ -14,27 +15,34 @@ public sealed class PayReservationCommandHandler
     private readonly IReservationRepository _reservationRepository;
     private readonly IPaymentRepository _paymentRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
     public PayReservationCommandHandler(
         ICurrentUserService currentUserService,
         IReservationRepository reservationRepository,
         IPaymentRepository paymentRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IRealtimeNotifier realtimeNotifier)
     {
         _currentUserService = currentUserService;
         _reservationRepository = reservationRepository;
         _paymentRepository = paymentRepository;
         _unitOfWork = unitOfWork;
+        _realtimeNotifier = realtimeNotifier;
     }
 
-    public async Task<PayReservationResponse> Handle(PayReservationCommand command, CancellationToken cancellationToken)
+    public async Task<PayReservationResponse> Handle(
+        PayReservationCommand command,
+        CancellationToken cancellationToken)
     {
         if (!_currentUserService.IsAuthenticated || _currentUserService.UserId is null)
         {
             throw new UnauthorizedException("User is not authenticated.");
         }
 
-        var reservation = await _reservationRepository.GetByIdWithDetailsAsync(command.ReservationId, cancellationToken);
+        var reservation = await _reservationRepository.GetByIdWithDetailsAsync(
+            command.ReservationId,
+            cancellationToken);
 
         if (reservation is null)
         {
@@ -67,6 +75,11 @@ public sealed class PayReservationCommandHandler
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+            await _realtimeNotifier.NotifyEventSeatsChangedAsync(
+                reservation.EventId,
+                CreateEventSeatStatusChangedMessages(reservation),
+                cancellationToken);
+
             throw new BadRequestException("Reservation has expired.");
         }
 
@@ -93,6 +106,11 @@ public sealed class PayReservationCommandHandler
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        await _realtimeNotifier.NotifyEventSeatsChangedAsync(
+            reservation.EventId,
+            CreateEventSeatStatusChangedMessages(reservation),
+            cancellationToken);
+
         return new PayReservationResponse(
             reservation.Id,
             reservation.ReservationCode,
@@ -102,5 +120,24 @@ public sealed class PayReservationCommandHandler
             payment.Amount,
             payment.Method,
             payment.PaidAt);
+    }
+
+    private static IReadOnlyList<EventSeatStatusChangedMessage> CreateEventSeatStatusChangedMessages(
+        Reservation reservation)
+    {
+        return reservation.ReservationSeats
+            .Select(reservationSeat =>
+            {
+                var eventSeat = reservationSeat.EventSeat;
+
+                return new EventSeatStatusChangedMessage(
+                    eventSeat.EventId,
+                    eventSeat.Id,
+                    eventSeat.SeatId,
+                    eventSeat.Seat.Label,
+                    eventSeat.Price,
+                    eventSeat.Status);
+            })
+            .ToList();
     }
 }

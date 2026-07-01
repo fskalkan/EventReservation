@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using EventReservation.Application.Abstractions.Authentication;
 using EventReservation.Application.Abstractions.Persistence;
+using EventReservation.Application.Abstractions.Realtime;
 using EventReservation.Application.Common.Exceptions;
 using EventReservation.Application.Features.Reservations.CancelReservation;
 using EventReservation.Domain.Entities;
@@ -15,6 +16,7 @@ public sealed class CancelReservationCommandHandlerTests
     private readonly Mock<ICurrentUserService> _currentUserServiceMock = new();
     private readonly Mock<IReservationRepository> _reservationRepositoryMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
+    private readonly Mock<IRealtimeNotifier> _realtimeNotifierMock = new();
 
     [Fact]
     public async Task Handle_ShouldCancelReservation_AndReleaseSeats_WhenRequestIsValid()
@@ -61,6 +63,15 @@ public sealed class CancelReservationCommandHandlerTests
 
         _unitOfWorkMock.Verify(
             x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _realtimeNotifierMock.Verify(
+            x => x.NotifyEventSeatsChangedAsync(
+                reservation.EventId,
+                It.Is<IReadOnlyList<EventSeatStatusChangedMessage>>(seats =>
+                    seats.Count == 2 &&
+                    seats.All(seat => seat.Status == EventSeatStatus.Available)),
+                It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -207,7 +218,8 @@ public sealed class CancelReservationCommandHandlerTests
         return new CancelReservationCommandHandler(
             _currentUserServiceMock.Object,
             _reservationRepositoryMock.Object,
-            _unitOfWorkMock.Object);
+            _unitOfWorkMock.Object,
+            _realtimeNotifierMock.Object);
     }
 
     private static Reservation CreatePendingReservationWithSeats(
