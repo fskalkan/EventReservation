@@ -9,8 +9,11 @@ using EventReservation.Application.Abstractions.Authentication;
 using EventReservation.Application.Abstractions.Realtime;
 using EventReservation.Infrastructure;
 using EventReservation.Infrastructure.Authentication;
+using EventReservation.Infrastructure.Persistence;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -125,6 +128,11 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services
+    .AddHealthChecks()
+    .AddCheck("api", () => HealthCheckResult.Healthy("API is running."), tags: new[] { "live" })
+    .AddDbContextCheck<AppDbContext>(name: "database", tags: new[] { "ready" });
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -152,6 +160,46 @@ app.MapControllers()
 
 app.MapHub<EventSeatsHub>("/hubs/event-seats");
 
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = WriteHealthCheckResponse
+});
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("live"),
+    ResponseWriter = WriteHealthCheckResponse
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = WriteHealthCheckResponse
+});
+
 app.Run();
+
+static Task WriteHealthCheckResponse(
+    HttpContext context,
+    HealthReport report)
+{
+    context.Response.ContentType = "application/json";
+
+    var response = new
+    {
+        status = report.Status.ToString(),
+        totalDuration = report.TotalDuration.TotalMilliseconds,
+        checks = report.Entries.Select(entry => new
+        {
+            name = entry.Key,
+            status = entry.Value.Status.ToString(),
+            description = entry.Value.Description,
+            duration = entry.Value.Duration.TotalMilliseconds,
+            exception = entry.Value.Exception?.Message
+        })
+    };
+
+    return context.Response.WriteAsJsonAsync(response);
+}
 
 public partial class Program;
