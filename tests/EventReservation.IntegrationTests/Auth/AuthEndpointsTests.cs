@@ -17,7 +17,7 @@ public sealed class AuthEndpointsTests : IClassFixture<CustomWebApplicationFacto
     }
 
     [Fact]
-    public async Task Register_ShouldCreateUser_AndReturnToken()
+    public async Task Register_ShouldCreateUser_AndReturnTokens()
     {
         // Arrange
         var email = CreateUniqueEmail();
@@ -45,6 +45,7 @@ public sealed class AuthEndpointsTests : IClassFixture<CustomWebApplicationFacto
 
         accessToken.Should().NotBeNullOrWhiteSpace();
         refreshToken.Should().NotBeNullOrWhiteSpace();
+        json.Should().Contain(email);
     }
 
     [Fact]
@@ -62,6 +63,7 @@ public sealed class AuthEndpointsTests : IClassFixture<CustomWebApplicationFacto
         };
 
         var firstResponse = await _client.PostAsJsonAsync("/api/auth/register", request);
+
         firstResponse.StatusCode.Should().BeOneOf(
             HttpStatusCode.OK,
             HttpStatusCode.Created);
@@ -74,7 +76,7 @@ public sealed class AuthEndpointsTests : IClassFixture<CustomWebApplicationFacto
     }
 
     [Fact]
-    public async Task Login_ShouldReturnToken_WhenCredentialsAreValid()
+    public async Task Login_ShouldReturnTokens_WhenCredentialsAreValid()
     {
         // Arrange
         var email = CreateUniqueEmail();
@@ -101,6 +103,7 @@ public sealed class AuthEndpointsTests : IClassFixture<CustomWebApplicationFacto
 
         accessToken.Should().NotBeNullOrWhiteSpace();
         refreshToken.Should().NotBeNullOrWhiteSpace();
+        json.Should().Contain(email);
     }
 
     [Fact]
